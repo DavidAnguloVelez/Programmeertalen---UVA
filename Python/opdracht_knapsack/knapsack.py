@@ -200,14 +200,11 @@ class Knapsack:
         False
         """
         if self.get_volume() + item.get_volume() > self.resources.get_volume():
-            print("Volume too much")
             return False
         elif (self.get_weight() + item.get_weight() >
                 self.resources.get_weight()):
-            print("Weight too much")
             return False
         elif item in self.get_item_list():
-            print("Item found lmao")
             return False
 
         self.items.add_item(item)
@@ -285,62 +282,85 @@ class Solver_Optimal_Iterative(Solver):
         return self.best_knapsack
 
 
-class Solver_Optimal_Recursive(Solver):
+class Solver_Optimal_Iterative_Deepcopy(Solver):
     def __init__(self) -> None:
         Solver.__init__(self)
 
-    def compare_knaps(self, k1: Knapsack, k2: Knapsack) -> Knapsack:
-        if k1.get_points() > k2.get_points():
-            return k1
-        else:
-            return k2
-
     def solve(self, knap: Knapsack, items: Items) -> None:
-        self.recursion(knap, items, 0)
+        # When no best_knapsack was given yet:
+        self.best_knapsack = knap
 
-    def recursion(self, knap: Knapsack, items: Items, index: int):
-        if self.best_knapsack is None:
-            self.best_knapsack = copy.deepcopy(knap)
+        stack = [(copy.deepcopy(knap), 0)]
 
-        if knap.get_points() > self.best_knapsack.get_points():
-            self.best_knapsack = copy.deepcopy(knap)
+        while len(stack) != 0:
+            knap, index = stack.pop()
 
-        if index >= len(items):
-            return
-        else:
-            if knap.item_fits(items.get_item_list()[index]):
-                k1: Knapsack = copy.deepcopy(knap)
-                k1.add_item(items.get_item_list()[index])
-                self.recursion(k1, items, index + 1)
+            if knap.get_points() > self.best_knapsack.get_points():
+                self.best_knapsack = copy.deepcopy(knap)
 
-            k2: Knapsack = knap
-            self.recursion(k2, items, index + 1)
+            if index < len(items):
+                item = items.get_item_list()[index]
+                if knap.item_fits(item):
+                    k2: Knapsack = copy.deepcopy(knap)
+                    k2.add_item(item)
+                    stack.append((k2, index + 1))
 
-    # def recursion(self, knap: Knapsack, items: Items) -> Knapsack:
-    #     # time.sleep(0.5)
-    #     # Base case
-    #     if len(items) == 0:
-    #         return knap
-    #     else:
-    #         item = items.pop()
-    #         if not knap.item_fits(item):
-    #             return knap
-    #         else:
-    #             k1: Knapsack = copy.deepcopy(knap)
-    #             k2: Knapsack = copy.deepcopy(knap)
-    #             k2.add_item(item)
-    #             # print("k1: ", k1, "\nk2: ", k2)
-    #             return self.compare_knaps(
-    #                 self.recursion(k1, items),
-    #                 self.recursion(k2, items))
+                stack.append((knap, index + 1))
+
+        # if self.best_knapsack is None:
+        #     self.best_knapsack = copy.deepcopy(knap)
+
+        # if knap.get_points() > self.best_knapsack.get_points():
+        #     self.best_knapsack = copy.deepcopy(knap)
+
+        # if index >= len(items):
+        #     return
+        # else:
+        #     if knap.item_fits(items.get_item_list()[index]):
+        #         k1: Knapsack = copy.deepcopy(knap)
+        #         k1.add_item(items.get_item_list()[index])
+        #         self.recursion(k1, items, index + 1)
+
+        #     self.recursion(knap, items, index + 1)
 
     def get_best_knapsack(self):
         return self.best_knapsack
 
 
-class Solver_Optimal_Iterative_Deepcopy(Solver):
+class Solver_Optimal_Recursive(Solver):
     def __init__(self) -> None:
         Solver.__init__(self)
+
+    def solve(self, knap: Knapsack, items: Items) -> None:
+        # Calls the recursive function
+        self.recursion(knap, items, 0)
+
+    def recursion(self, knap: Knapsack, items: Items, index: int) -> None:
+        # Checks if no best_knapsack was assigned yet.
+        if self.best_knapsack is None:
+            self.best_knapsack = copy.deepcopy(knap)
+
+        # If a better knapsack is found, assign it as the best knapsack.
+        if knap.get_points() > self.best_knapsack.get_points():
+            self.best_knapsack = copy.deepcopy(knap)
+
+        # When done looping through all items, stop recursion (base case).
+        if index >= len(items):
+            return
+        else:
+            # If the item still fits in the backpack, make a recursive
+            # call with the current knapsack plus the item added.
+            if knap.item_fits(items.get_item_list()[index]):
+                k1: Knapsack = copy.deepcopy(knap)
+                k1.add_item(items.get_item_list()[index])
+                self.recursion(k1, items, index + 1)
+
+            # Make a recursive call, with no modification to the current
+            # knapsack, but make it check with other items (index + 1).
+            self.recursion(knap, items, index + 1)
+
+    def get_best_knapsack(self):
+        return self.best_knapsack
 
 
 class Solver_Random_Improved(Solver):
@@ -402,7 +422,7 @@ def main() -> None:
     # return
     # solver_random = Solver_Random(1000)
     # solver_optimal_iterative = Solver_Optimal_Iterative()
-    # solver_optimal_iterative_deepcopy = Solver_Optimal_Iterative_Deepcopy()
+    solver_optimal_iterative_deepcopy = Solver_Optimal_Iterative_Deepcopy()
     solver_optimal_recursive = Solver_Optimal_Recursive()
     # solver_random_improved = Solver_Random_Improved(5000)
 
@@ -414,8 +434,8 @@ def main() -> None:
             # ".csv", knapsack_file + "_solution_optimal_iterative.csv")
     solve(solver_optimal_recursive, knapsack_file +
           ".csv", knapsack_file + "_solution_optimal_recursive.csv")
-    # solve(solver_optimal_iterative_deepcopy, knapsack_file + ".csv",
-    #       knapsack_file + "_solution_optimal_iterative_deepcopy.csv")
+    solve(solver_optimal_iterative_deepcopy, knapsack_file + ".csv",
+          knapsack_file + "_solution_optimal_iterative_deepcopy.csv")
     # solve(solver_random_improved, knapsack_file +
             # ".csv", knapsack_file + "_solution_random_improved.csv")
 
@@ -424,8 +444,8 @@ def main() -> None:
     # solve(solver_random, knapsack_file + ".csv", knapsack_file + "_solution_random.csv")
     # solve(solver_optimal_iterative, knapsack_file + ".csv", knapsack_file + "_solution_optimal_iterative.csv")
     solve(solver_optimal_recursive, knapsack_file + ".csv", knapsack_file + "_solution_optimal_recursive.csv")
-    # solve(solver_optimal_iterative_deepcopy, knapsack_file + ".csv",
-    #       knapsack_file + "_solution_optimal_iterative_deepcopy.csv")
+    solve(solver_optimal_iterative_deepcopy, knapsack_file + ".csv",
+          knapsack_file + "_solution_optimal_iterative_deepcopy.csv")
     # solve(solver_random_improved, knapsack_file + ".csv", knapsack_file + "_solution_random_improved.csv")
 
     # knapsack_file = "knapsack_large"

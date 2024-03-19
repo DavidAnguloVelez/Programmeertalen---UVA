@@ -1,5 +1,6 @@
 -module(grid).
--export([show_hlines/2, show_vlines/2, print/1, new/2, get_wall/3, has_wall/2, add_wall/2, get_all_walls/2]).
+-export([show_hlines/2, show_vlines/2, print/1, new/2, get_wall/3, has_wall/2,
+    add_wall/2, get_all_walls/2, get_open_spots/1, choose_random_wall/1]).
 
 new(Width, Height) -> {Width, Height, []}.
 
@@ -109,8 +110,39 @@ print(Grid) ->
 get_cell_walls(X, Y) ->
     [get_wall(X, Y, Dir) || Dir <- [north, east, south, west]].
 
+remove_duplicates([])    -> [];
+remove_duplicates([Head | Tail]) -> [Head | [X || X <- remove_duplicates(Tail), X /= Head]].
+
 get_all_walls(Width, Height) ->
-    X_coords = lists:seq(0, Width),
-    Y_coords = lists:seq(0, Height),
-    Duped_list = [get_cell_walls(X, Y) || X <- X_coords, Y <- Y_coords],
-    Duped_list.
+    Get_Walls = fun(Get_Walls, Acc, X, Y) ->
+        if
+            Y >= Height -> % Einde bereikt
+                Acc;
+
+            X < Width -> % Zolang regel nog niet afgelopen is
+                Acc1 = Acc ++ get_cell_walls(X, Y),
+                Get_Walls(Get_Walls, Acc1, X + 1, Y);
+
+            true -> % Ga naar volgende regel
+                Get_Walls(Get_Walls, Acc, 0, Y + 1)
+            end
+        end,
+
+    L = Get_Walls(Get_Walls, [], 0, 0),
+    remove_duplicates(L).
+
+get_open_spots({Width, Height, Walls}) ->
+    All_Walls = get_all_walls(Width, Height),
+    All_Walls -- Walls.
+
+choose_random_wall(Grid) ->
+    Options = get_open_spots(Grid),
+    if
+        Options == [] ->
+            {};
+
+        true ->
+            Length = length(Options),
+            Random_Index = rand:uniform(Length),
+            lists:nth(Random_Index, Options)
+    end.

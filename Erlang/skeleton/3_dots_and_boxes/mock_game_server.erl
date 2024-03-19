@@ -15,7 +15,7 @@ init({Width, Height}) ->
 
 handle_call({move, Wall}, {_, _}, {W, H, Walls}) ->
     {reply, {ok, 0}, {W, H, [Wall|Walls]}};
-    
+
 handle_call(last_wall, _From, {W, H, [Wall|T]}) ->
     {reply, {ok, Wall}, {W, H, [Wall|T]}};
 handle_call(last_wall, _From, {W, H, []}) ->

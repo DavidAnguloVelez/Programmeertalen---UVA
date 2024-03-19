@@ -1,8 +1,12 @@
 -module(grid).
 -export([show_hlines/2, show_vlines/2, print/1, new/2, get_wall/3, has_wall/2,
-    add_wall/2, get_all_walls/2, get_open_spots/1, choose_random_wall/1]).
+    add_wall/2, get_cell_walls/2, get_all_walls/2, get_open_spots/1, choose_random_wall/1,
+    test_grid/0, print_list/1]).
+
 
 new(Width, Height) -> {Width, Height, []}.
+
+test_grid() -> {2, 2, [get_wall(0, 0, north), get_wall(1, 0, east)]}.
 
 get_wall(Width, Height, Dir) ->
     Origin = {Width, Height},
@@ -14,9 +18,11 @@ get_wall(Width, Height, Dir) ->
         _ -> io:format("Use north, east, south or west as an direction")
     end.
 
+
 has_wall(Wall, Grid) ->
     {_, _, Walls} = Grid,
     lists:member(Wall, Walls).
+
 
 add_wall(Wall, Grid) ->
     case has_wall(Wall, Grid) of
@@ -28,67 +34,46 @@ add_wall(Wall, Grid) ->
             Grid
     end.
 
+print_list([]) -> "";
+print_list([H | T]) -> H ++ print_list(T).
+
 show_hlines(Row, {Width, _, Walls}) ->
-    RowWalls = [{{Sx, Sy}, {Ex, Ey}} || {{Sx, Sy}, {Ex, Ey}} <- Walls, Sy == Row - 1, Ey == Row],
-    SortedRowWalls = lists:sort(fun({{Sx1, _}, _}, {{Sx2, _}, _}) -> Sx1 < Sx2 end, RowWalls),
+    RowWalls = [Sx|| {{Sx, Sy}, {_, Ey}} <- Walls, Sy == Row - 1, Ey == Row],
+    RowCoords = lists:seq(0, Width - 1),
+    StringList = lists:map(
+        fun(X) ->
+            case lists:member(X, RowWalls) of
+                true ->
+                    "+--";
 
-    PrintWalls = fun(PrintWalls, Acc, I, RemWalls) ->
-        case RemWalls of
-            _ when I >= Width ->
-                Acc ++ "+~n";
+                false ->
+                    "+  "
+            end
+        end, RowCoords),
+    print_list(StringList ++ ["+~n"]).
 
-            [] ->
-                Acc1 = Acc ++ "+  ",
-                PrintWalls(PrintWalls, Acc1, I + 1, RemWalls);
-
-            _ ->
-                [Wall | RemWallsRest] = RemWalls,
-                {{Sx, _}, _} = Wall,
-                if
-                    I == Sx ->
-                        Acc1 = Acc ++ "+--",
-                        PrintWalls(PrintWalls, Acc1, I + 1, RemWallsRest);
-                    I /= Sx ->
-                        Acc1 = Acc ++ "+  ",
-                        PrintWalls(PrintWalls, Acc1, I + 1, [Wall | RemWallsRest])
-                end
-        end
-    end,
-
-    PrintWalls(PrintWalls, "", 0, SortedRowWalls).
 
 show_vlines(Row, {Width, _, Walls}) ->
-    RowWalls = [{{Sx, Sy}, {Ex, Ey}} || {{Sx, Sy}, {Ex, Ey}} <- Walls, Sy == Row, Sy == Ey],
-    SortedRowWalls = lists:sort(fun({{Sx1, _}, _}, {{Sx2, _}, _}) -> Sx1 < Sx2 end, RowWalls),
+    RowWalls = [Sx || {{Sx, Sy}, {_, Ey}} <- Walls, Sy == Row, Ey == Row],
+    RowCoords = lists:seq(0, Width),
+    StringList = lists:map(
+        fun(X) ->
+            case lists:member(X - 1, RowWalls) of
+                true when X == Width ->
+                    "|";
 
-    PrintWalls = fun(PrintWalls, Acc, I, RemWalls) ->
-        case RemWalls of
-            _ when I >= Width + 1 ->
-                % io:format("Case width reached~n~n"),
-                Acc ++ "~n";
+                true ->
+                    "|  ";
 
-            [] ->
-                % io:format("Case empty list~n~n"),
-                Acc ++ " ~n";
+                false when X == Width ->
+                    " ";
 
-            _ ->
-                [Wall | RemWallsRest] = RemWalls,
-                {{Sx, _}, _} = Wall,
-                if
-                    Sx == I - 1 ->
-                        % io:format("Case wall found~n Wall: ~p~n~n", [Wall]),
-                        Acc1 = Acc ++ "|  ",
-                        PrintWalls(PrintWalls, Acc1, I + 1, RemWallsRest);
+                false ->
+                    "   "
+            end
+        end, RowCoords),
+    print_list(StringList ++ ["~n"]).
 
-                    true->
-                        %  io:format("Case no wall found~n Wall: ~p~n~n", [Wall]),
-                        Acc1 = Acc ++ "   ",
-                        PrintWalls(PrintWalls, Acc1, I + 1, RemWalls)
-                end
-        end
-    end,
-
-    PrintWalls(PrintWalls, "", 0, SortedRowWalls).
 
 % Prints this grid in a structured format
 % using the show_Xlines functions.
@@ -107,11 +92,14 @@ print(Grid) ->
     io:fwrite("~n"),
     ok.
 
+
 get_cell_walls(X, Y) ->
     [get_wall(X, Y, Dir) || Dir <- [north, east, south, west]].
 
+
 remove_duplicates([])    -> [];
 remove_duplicates([Head | Tail]) -> [Head | [X || X <- remove_duplicates(Tail), X /= Head]].
+
 
 get_all_walls(Width, Height) ->
     Get_Walls = fun(Get_Walls, Acc, X, Y) ->
@@ -131,15 +119,17 @@ get_all_walls(Width, Height) ->
     L = Get_Walls(Get_Walls, [], 0, 0),
     remove_duplicates(L).
 
+
 get_open_spots({Width, Height, Walls}) ->
     All_Walls = get_all_walls(Width, Height),
     All_Walls -- Walls.
+
 
 choose_random_wall(Grid) ->
     Options = get_open_spots(Grid),
     if
         Options == [] ->
-            {};
+            [];
 
         true ->
             Length = length(Options),

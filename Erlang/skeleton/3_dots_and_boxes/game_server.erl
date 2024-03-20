@@ -2,7 +2,7 @@
 
 -behaviour(gen_server).
 
--import(grid, [get_wall/3, get_cell_walls/2, check_cell_filled/2]).
+-import(grid, [get_wall/3, get_cell_walls/2, check_cell_filled/2, get_open_spots/1]).
 
 -export([start_link/1, handle_call/3, handle_cast/2]).
 -export([init/1, move/2]).
@@ -18,23 +18,30 @@ move(Pid, Wall) ->
 % TODO: You need to inform the first player to move.
 init({Width, Height, Players}) ->
     Grid = grid:new(Width, Height),
+    % case length(Players) of
+    %     0 ->
+    %         {error, "Not enough players"};
+    %     _ ->
+            [Player | _] = Players,
+    % end,
+
+    Player ! {move, self(), Grid},
     {ok, {Grid, Players}}.
 
-handle_call({move, Wall}, _From, {Grid, Players}) ->
-    GridNew = grid:add_wall(Wall, Grid),
-    [Player | PlayersRest] = Players,
+calculate_score(Wall, Grid) ->
     {Cell1, Cell2} = Wall,
 
     % Check of eerste cell ingebouwd is.
-    case grid:check_cell_filled(Cell1, GridNew) of
+    case grid:check_cell_filled(Cell1, Grid) of
         true ->
-           Score = 1;
+            Score = 1;
+
         false ->
             Score = 0
     end,
 
     % Check of tweede cell ingebouwd is.
-    case grid:check_cell_filled(Cell2, GridNew) of
+    case grid:check_cell_filled(Cell2, Grid) of
         true ->
             Score1 = Score + 1;
 
@@ -42,16 +49,34 @@ handle_call({move, Wall}, _From, {Grid, Players}) ->
             Score1 = Score
     end,
 
+    % io:format("Score of cells: ~p~n", Score1),
+
+    Score1.
+
+handle_call({move, Wall}, _From, {Grid, Players}) ->
+    GridNew = grid:add_wall(Wall, Grid),
+    [Player | PlayersRest] = Players,
+
+    Score = calculate_score(Wall, GridNew),
+
     % Check of speler een punt heeft gehaald.
     if
-        Score1 > 0 ->
-            NewPlayers = Players ++ PlayersRest;
+        Score > 0 ->
+            NewPlayers = [Player] ++ PlayersRest;
 
         true ->
-            NewPlayers = PlayersRest ++ Player
+            NewPlayers = PlayersRest ++ [Player]
     end,
 
-    {reply, {ok, Score1}, {GridNew, NewPlayers}};
+    % Check of einde van het spel is bereikt.
+    case length(grid:get_open_spots(GridNew)) of
+        0 ->
+            [P ! finished || P <- Players];
+        _ ->
+            Player ! {move, self(), GridNew}
+    end,
+
+    {reply, {ok, Score}, {GridNew, NewPlayers}};
 
 % Used for testing.
 handle_call(state, _From, State) ->

@@ -21,6 +21,9 @@ init([]) ->
     {ok, []}.
 
 % TODO: add handle_call to make new_game/3 work.
+handle_call(new_game, W, H, Players) ->
+    {reply, {ok, GameNew}, NewGames};
+
 handle_call(games , _From, Games) ->
     {reply, Games, Games}.
 

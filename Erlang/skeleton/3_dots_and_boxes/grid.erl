@@ -1,7 +1,15 @@
+%   David Angulo Velez
+%   UvaID - 14977524
+%   Bachelor Informatica
+
+%   Het volgende programma implementeerd de basis voor het manipuleren van
+%   een rooster voor het spel 'kamertje verhuur'.
+
+
 -module(grid).
 -export([show_hlines/2, show_vlines/2, print/1, new/2, get_wall/3, has_wall/2,
     add_wall/2, get_cell_walls/2, get_all_walls/2, get_open_spots/1, choose_random_wall/1,
-    test_grid/0, print_list/1]).
+    test_grid/0, print_list/1, check_cell_filled/2]).
 
 
 new(Width, Height) -> {Width, Height, []}.
@@ -96,11 +104,21 @@ print(Grid) ->
 get_cell_walls(X, Y) ->
     [get_wall(X, Y, Dir) || Dir <- [north, east, south, west]].
 
+check_cell_filled({X, Y}, Grid) ->
+    {_, _, Walls} = Grid,
+    CellWalls = [CellWall || CellWall <- get_cell_walls(X, Y), lists:member(CellWall, Walls)],
+    case length(CellWalls) of
+        4 ->
+            true;
+        _ ->
+            false
+    end.
 
-remove_duplicates([])    -> [];
+% Verwijdert duplicates uit een lijst.
+remove_duplicates([]) -> [];
 remove_duplicates([Head | Tail]) -> [Head | [X || X <- remove_duplicates(Tail), X /= Head]].
 
-
+% Returned alle walls in het gehele grid.
 get_all_walls(Width, Height) ->
     Get_Walls = fun(Get_Walls, Acc, X, Y) ->
         if

@@ -33,7 +33,7 @@ check_games(Pid) ->
         false -> true
     end.
 
-% Tests how the lobby server reacts when a 
+% Tests how the lobby server reacts when a
 % game server stops running.
 test_exit_handle(_Server) ->
     {ok, Pid} = lobby_server:new_game(1, 1, [mock_client:new()]),
@@ -47,15 +47,15 @@ instantiator(Fixture) ->
     % You have ten seconds(more than enough).
     % If you get a timeout you are not removing
     % the game from the list of games.
-    {timeout, 10, {inorder, 
+    {timeout, 10, {inorder,
         [?_test(test_exit_handle(Fixture))
         ]
     }}.
 
 
 exit_handle_test_() ->
-    {setup, 
-        fun setup/0,  
+    {setup,
+        fun setup/0,
         fun shutdown/1,
         fun instantiator/1
     }.

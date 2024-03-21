@@ -1,6 +1,12 @@
+%   David Angulo Velez
+%   UvaID - 14977524
+%   Bachelor Informatica
+
+%   Het volgende programma implementeerd de basis van een speler in
+%   het spel 'kamertje verhuur'.
+
 -module(client).
 -export([move/0, new/0]).
--import(grid, [choose_random_wall/1]).
 
 
 move() ->
@@ -14,7 +20,6 @@ move() ->
             Wall = grid:choose_random_wall(Grid),
             gen_server:call(ServerPid, {move, Wall}),
             move()
-
     end.
 
 

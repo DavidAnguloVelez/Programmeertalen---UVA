@@ -14,7 +14,7 @@ tests_run() ->
     end).
 
 
-get_open_cell_walls_test_() -> 
+get_open_cell_walls_test_() ->
     Walls = [{{0,0},{1,0}},{{0,0},{0,1}},{{0,-1},{0,0}},{{-1,0},{0,0}}],
     [H|T] = Walls,
     [?_assertEqual(Walls,
@@ -25,7 +25,7 @@ get_open_cell_walls_test_() ->
     ].
 
 
-get_completable_walls_test_() -> 
+get_completable_walls_test_() ->
     Walls = [{{0,0},{1,0}},{{0,0},{0,1}},{{0,-1},{0,0}},{{-1,0},{0,0}}],
     [H|T] = Walls,
     [?_assertEqual([],

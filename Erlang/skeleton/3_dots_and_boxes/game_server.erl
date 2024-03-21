@@ -1,8 +1,15 @@
+%   David Angulo Velez
+%   UvaID - 14977524
+%   Bachelor Informatica
+
+%   Het volgende programma implementeerd de basis van een game server voor het
+%   spel 'kamertje verhuur'.
+
 -module(game_server).
 
--behaviour(gen_server).
+-include_lib("eunit/include/eunit.hrl").
 
--import(grid, [get_wall/3, get_cell_walls/2, check_cell_filled/2, get_open_spots/1]).
+-behaviour(gen_server).
 
 -export([start_link/1, handle_call/3, handle_cast/2]).
 -export([init/1, move/2]).
@@ -28,6 +35,7 @@ init({Width, Height, Players}) ->
     Player ! {move, self(), Grid},
     {ok, {Grid, Players}}.
 
+
 calculate_score(Wall, Grid) ->
     {Cell1, Cell2} = Wall,
 
@@ -49,7 +57,6 @@ calculate_score(Wall, Grid) ->
             Score1 = Score
     end,
 
-    % io:format("Score of cells: ~p~n", Score1),
 
     Score1.
 

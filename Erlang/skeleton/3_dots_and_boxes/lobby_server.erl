@@ -19,6 +19,7 @@
 new_game(W, H, Players) ->
     gen_server:call(lobby_server, {new_game, W, H, Players}).
 
+% Gets called when the lobby server starts.
 games() ->
     start(),
     gen_server:call(lobby_server, games).
@@ -27,25 +28,32 @@ games() ->
 start() ->
     gen_server:start({local, lobby_server}, lobby_server, [], []).
 
+% Initiliases the primary state, existing of an empty lists with no active
+% game servers.
 init([]) ->
     {ok, []}.
 
-% TODO: add handle_call to make new_game/3 work.
+% Handles the call whenever a new game is made. Adds a monitors to the new
+% game server to detect whenever it stops running. Adds the new game server pid 
+% to the current state.
 handle_call({new_game, W, H, Players}, _From, Games) ->
     {ok, PidNewGame} = game_server:start_link({W, H, Players}),
     erlang:monitor(process, PidNewGame),
     NewGames = Games ++ [PidNewGame],
     {reply, {ok, PidNewGame}, NewGames};
 
+
 handle_call(games , _From, Games) ->
     {reply, Games, Games}.
 
+% Gets notified whenever a game stops runnig, removes the stopping game server
+% from the current state.
 handle_info({'DOWN', _MonitorRef, process, GamePid, _Reason}, Games) ->
     NewGames = Games -- [GamePid],
     {noreply, NewGames}.
 
 % Required for gen_server behaviour.
-% Normally you would implement this to,
+% Normally you would implement this too,
 % but not required for this assignment.
 handle_cast(_, State) ->
     {reply, not_implemented, State}.

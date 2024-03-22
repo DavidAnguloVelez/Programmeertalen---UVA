@@ -22,24 +22,24 @@ move(Pid, Wall) ->
     gen_server:call(Pid, {move, Wall}).
 
 
-% TODO: You need to inform the first player to move.
+% Initiliases a game server, checks if there are more than 0 players to start
+% the game.
 init({Width, Height, Players}) ->
     Grid = grid:new(Width, Height),
-    % case length(Players) of
-    %     0 ->
-    %         {error, "Not enough players"};
-    %     _ ->
+    case length(Players) of
+        0 ->
+            {error, "Not enough players"};
+        _ ->
             [Player | _] = Players,
-    % end,
+            Player ! {move, self(), Grid},
+            {ok, {Grid, Players}}
+    end.
 
-    Player ! {move, self(), Grid},
-    {ok, {Grid, Players}}.
-
-
+% Returns and calculates the score given the wall that is just placed in the grid.
 calculate_score(Wall, Grid) ->
     {Cell1, Cell2} = Wall,
 
-    % Check of eerste cell ingebouwd is.
+    % Check if first cell has been filled.
     case grid:check_cell_filled(Cell1, Grid) of
         true ->
             Score = 1;
@@ -48,7 +48,7 @@ calculate_score(Wall, Grid) ->
             Score = 0
     end,
 
-    % Check of tweede cell ingebouwd is.
+    % Check if second cell has been filled.
     case grid:check_cell_filled(Cell2, Grid) of
         true ->
             Score1 = Score + 1;
@@ -60,13 +60,17 @@ calculate_score(Wall, Grid) ->
 
     Score1.
 
+% Handles the call whenever a player makes a move, calculates and replies with
+% the score made with the given move and determines the sequence of turns.
+% Replies with a move call to the player which turn it is, replying with the
+% new grid.
 handle_call({move, Wall}, _From, {Grid, Players}) ->
     GridNew = grid:add_wall(Wall, Grid),
     [Player | PlayersRest] = Players,
 
     Score = calculate_score(Wall, GridNew),
 
-    % Check of speler een punt heeft gehaald.
+    % Checks if a player gained a point.
     if
         Score > 0 ->
             NewPlayers = [Player] ++ PlayersRest;
@@ -75,7 +79,7 @@ handle_call({move, Wall}, _From, {Grid, Players}) ->
             NewPlayers = PlayersRest ++ [Player]
     end,
 
-    % Check of einde van het spel is bereikt.
+    % Checks if the end of the game is reached.
     case length(grid:get_open_spots(GridNew)) of
         0 ->
             [P ! finished || P <- Players];
